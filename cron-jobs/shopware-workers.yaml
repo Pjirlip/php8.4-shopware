@@ -1,0 +1,109 @@
+# Shopware 6: Scheduled Tasks und Message Queue laufen als eigene, langlebige Worker-Deployments
+# (ein Replica je Shop), nicht im Webcontainer und nicht über den Admin-Worker (H2).
+# Beide Kommandos beenden sich nach --time-limit, Kubernetes startet den Container neu.
+# Voraussetzung in config/packages/shopware.yaml:
+#   shopware:
+#     admin_worker:
+#       enable_admin_worker: false
+# Anpassen: Namen, Image-Tag, PVC, Secret mit APP_ENV/DATABASE_URL usw.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-shop-scheduled-tasks
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: example-shop-scheduled-tasks
+  template:
+    metadata:
+      labels:
+        app: example-shop-scheduled-tasks
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: scheduled-tasks
+          image: ghcr.io/pjirlip/php8.4-shopware:latest
+          workingDir: /var/www/html            # Projekt-Root, DocumentRoot ist /var/www/html/public
+          command: ["php", "-d", "memory_limit=512M", "bin/console", "scheduled-task:run", "--time-limit=3600", "--memory-limit=512M"]
+          envFrom:
+            - secretRef:
+                name: example-shop-env
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              memory: 768Mi
+          volumeMounts:
+            - name: webroot
+              mountPath: /var/www/html
+            - name: shopware-cache
+              mountPath: /var/www/html/var/cache
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: webroot
+          persistentVolumeClaim:
+            claimName: example-shop-webroot
+        - name: shopware-cache
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-shop-messenger-worker
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: example-shop-messenger-worker
+  template:
+    metadata:
+      labels:
+        app: example-shop-messenger-worker
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: messenger
+          image: ghcr.io/pjirlip/php8.4-shopware:latest
+          workingDir: /var/www/html
+          command: ["php", "-d", "memory_limit=512M", "bin/console", "messenger:consume", "async", "low_priority", "--time-limit=3600", "--memory-limit=512M"]
+          envFrom:
+            - secretRef:
+                name: example-shop-env
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              memory: 768Mi
+          volumeMounts:
+            - name: webroot
+              mountPath: /var/www/html
+            - name: shopware-cache
+              mountPath: /var/www/html/var/cache
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: webroot
+          persistentVolumeClaim:
+            claimName: example-shop-webroot
+        - name: shopware-cache
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
