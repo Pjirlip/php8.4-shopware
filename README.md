@@ -1,5 +1,11 @@
 # php-8-4-shopware
 
+> **Branch `fpm`:** dieses Repository baut hier das PHP-FPM-Image `ghcr.io/pjirlip/php8.4-shopware-fpm`
+> (`Dockerfile`, mit Node 20 für die Shopware-Builds). Der Apache-Container ist für alle Sites derselbe,
+> `ghcr.io/pjirlip/httpd` aus dem Repository `php8.2` (event-MPM + mod_proxy_fcgi, ohne PHP); dessen Vhost deckt
+> `media/` und `thumbnail/` mit ab. Aufbau, Pool-Dimensionierung, Probes und Deployment-Skelett sind im README von
+> `php8.2` (Abschnitt "Apache + PHP-FPM") beschrieben. `php8.4-shopware:latest` bleibt bis zum Merge unverändert.
+
 Dockerimage für Hosting von Shopware-6-Shops mit PHP Version 8.4 (`DOCUMENT_ROOT=/var/www/html/public`).
 
 Inkl. GM, Node 20 und Redis Support

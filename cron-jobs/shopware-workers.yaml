@@ -29,7 +29,7 @@ spec:
         runAsGroup: 1000
       containers:
         - name: scheduled-tasks
-          image: ghcr.io/pjirlip/php8.4-shopware:latest
+          image: ghcr.io/pjirlip/php8.4-shopware-fpm:latest
           workingDir: /var/www/html            # Projekt-Root, DocumentRoot ist /var/www/html/public
           command: ["php", "-d", "memory_limit=512M", "bin/console", "scheduled-task:run", "--time-limit=3600", "--memory-limit=512M"]
           envFrom:
@@ -80,7 +80,7 @@ spec:
         runAsGroup: 1000
       containers:
         - name: messenger
-          image: ghcr.io/pjirlip/php8.4-shopware:latest
+          image: ghcr.io/pjirlip/php8.4-shopware-fpm:latest
           workingDir: /var/www/html
           command: ["php", "-d", "memory_limit=512M", "bin/console", "messenger:consume", "async", "low_priority", "--time-limit=3600", "--memory-limit=512M"]
           envFrom:
